@@ -1,123 +1,96 @@
 
 package com.netpulse.netpulse_api;
 
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.server.ResponseStatusException;
-
-import jakarta.validation.Valid;
 
 import com.netpulse.netpulse_api.dto.EndpointRequest;
 import com.netpulse.netpulse_api.dto.EndpointResponse;
+import com.netpulse.netpulse_api.service.EndpointService;
 
-import java.util.List;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/endpoints")
 public class EndpointController {
 
-    private final EndpointRepository endpointRepository;
+    private final EndpointService endpointService;
 
-    public EndpointController(EndpointRepository endpointRepository) {
-        this.endpointRepository = endpointRepository;
+    public EndpointController(EndpointService endpointService) {
+        this.endpointService = endpointService;
     }
 
     // GET: Get all endpoints
     @GetMapping
     public List<EndpointResponse> getAllEndpoints() {
 
-    return endpointRepository.findAll()
-            .stream()
-            .map(endpoint -> new EndpointResponse(
-                    endpoint.getId(),
-                    endpoint.getName(),
-                    endpoint.getUrl()
-            ))
-            .toList();
-   }
+        return endpointService.getAllEndpoints()
+                .stream()
+                .map(endpoint -> new EndpointResponse(
+                        endpoint.getId(),
+                        endpoint.getName(),
+                        endpoint.getUrl()
+                ))
+                .toList();
+    }
 
     // POST: Create a new endpoint
     @PostMapping
     public EndpointResponse createEndpoint(
-        @Valid @RequestBody EndpointRequest request) {
+            @Valid @RequestBody EndpointRequest request) {
 
-    Endpoint endpoint = new Endpoint(
-            request.getName(),
-            request.getUrl()
-    );
+        Endpoint endpoint = endpointService.createEndpoint(request);
 
-    Endpoint savedEndpoint = endpointRepository.save(endpoint);
-
-    return new EndpointResponse(
-            savedEndpoint.getId(),
-            savedEndpoint.getName(),
-            savedEndpoint.getUrl()
-    );
-  }
+        return new EndpointResponse(
+                endpoint.getId(),
+                endpoint.getName(),
+                endpoint.getUrl()
+        );
+    }
 
     // GET: Get endpoint by ID
     @GetMapping("/{id}")
     public EndpointResponse getEndpointById(@PathVariable Long id) {
 
-    Endpoint endpoint = endpointRepository.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Endpoint not found"
-            ));
+        Endpoint endpoint = endpointService.getEndpointById(id);
 
-    return new EndpointResponse(
-            endpoint.getId(),
-            endpoint.getName(),
-            endpoint.getUrl()
-    );
+        return new EndpointResponse(
+                endpoint.getId(),
+                endpoint.getName(),
+                endpoint.getUrl()
+        );
     }
 
     // PUT: Update an existing endpoint
     @PutMapping("/{id}")
     public EndpointResponse updateEndpoint(
-        @PathVariable Long id,
-        @Valid @RequestBody EndpointRequest request) {
+            @PathVariable Long id,
+            @Valid @RequestBody EndpointRequest request) {
 
-    Endpoint existingEndpoint = endpointRepository.findById(id)
-            .orElseThrow(() -> new ResponseStatusException(
-                    HttpStatus.NOT_FOUND,
-                    "Endpoint not found"
-            ));
+        Endpoint endpoint = endpointService.updateEndpoint(id, request);
 
-    existingEndpoint.setName(request.getName());
-    existingEndpoint.setUrl(request.getUrl());
-
-    Endpoint savedEndpoint = endpointRepository.save(existingEndpoint);
-
-    return new EndpointResponse(
-            savedEndpoint.getId(),
-            savedEndpoint.getName(),
-            savedEndpoint.getUrl()
-    );
+        return new EndpointResponse(
+                endpoint.getId(),
+                endpoint.getName(),
+                endpoint.getUrl()
+        );
     }
 
     // DELETE: Delete an endpoint
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEndpoint(@PathVariable Long id) {
 
-    if (!endpointRepository.existsById(id)) {
-        throw new ResponseStatusException(
-                HttpStatus.NOT_FOUND,
-                "Endpoint not found"
-        );
-    }
+        endpointService.deleteEndpoint(id);
 
-    endpointRepository.deleteById(id);
-
-    return ResponseEntity.noContent().build();
+        return ResponseEntity.noContent().build();
     }
 }
